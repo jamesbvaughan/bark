@@ -4,8 +4,11 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"path/filepath"
 
+	"github.com/antchfx/htmlquery"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
 	"github.com/urfave/cli"
@@ -40,16 +43,29 @@ func addBookmark(db *sql.DB) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		url := c.Args().First()
 
-		id := getNextId(db)
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer resp.Body.Close()
 
-		uuid := uuid.Must(uuid.NewV4())
-
-		_, err := db.Exec("insert into bookmarks(url, id, uuid) values(?, ?, ?)", url, id, uuid)
+		html, err := htmlquery.Parse(resp.Body)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("added bookmark:", url)
+		title := htmlquery.InnerText(htmlquery.FindOne(html, "//title"))
+
+		id := getNextId(db)
+
+		uuid := uuid.Must(uuid.NewV4())
+
+		_, err = db.Exec("insert into bookmarks(url, id, uuid) values(?, ?, ?)", url, id, uuid)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("added bookmark: %s: %s\n", title, url)
 		return nil
 	}
 }
@@ -128,7 +144,14 @@ func main() {
 	app.EnableBashCompletion = true
 	app.Version = "0.0.1"
 
-	db, err := sql.Open("sqlite3", "/home/james/bark.db")
+	barkPath := filepath.Join(os.Getenv("HOME"), ".bark")
+	err := os.MkdirAll(barkPath, os.ModePerm)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	databaseFile := filepath.Join(barkPath, "database")
+	db, err := sql.Open("sqlite3", databaseFile)
 	if err != nil {
 		log.Fatal(err)
 	}
