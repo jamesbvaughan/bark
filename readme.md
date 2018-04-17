@@ -33,6 +33,15 @@ bark list archived
 ```
 
 
+Todo
+----
+
+- [ ] Convert articles to be readable and cache them
+- [ ] Download bookmarked youtube videos for offline viewing
+- [ ] Add a command to open bookmarks
+- [ ] Add annotations for bookmarks
+
+
 [Licence](LICENSE)
 ------------------
 
