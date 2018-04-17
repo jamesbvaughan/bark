@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
+	"github.com/RadhiFadlillah/go-readability"
 	"github.com/antchfx/htmlquery"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
@@ -67,6 +69,13 @@ func addBookmark(db *sql.DB) func(c *cli.Context) error {
 		}
 
 		fmt.Printf("added bookmark: %s\n", title)
+
+		article, err := readability.Parse(url, 5*time.Second)
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(article.Content)
+
 		return nil
 	}
 }
