@@ -45,7 +45,8 @@ func addBookmark(db *sql.DB) func(c *cli.Context) error {
 
 		resp, err := http.Get(url)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Printf("error: \"%s\" is not a proper url\n", url)
+			os.Exit(1)
 		}
 		defer resp.Body.Close()
 
@@ -60,30 +61,31 @@ func addBookmark(db *sql.DB) func(c *cli.Context) error {
 
 		uuid := uuid.Must(uuid.NewV4())
 
-		_, err = db.Exec("insert into bookmarks(url, id, uuid) values(?, ?, ?)", url, id, uuid)
+		_, err = db.Exec("insert into bookmarks(url, id, title, uuid) values(?, ?, ?, ?)", url, id, title, uuid)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Printf("added bookmark: %s: %s\n", title, url)
+		fmt.Printf("added bookmark: %s\n", title)
 		return nil
 	}
 }
 
 func listArchivedBookmarks(db *sql.DB) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		rows, err := db.Query("select url from archive")
+		rows, err := db.Query("select title, url from archive")
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer rows.Close()
 		for rows.Next() {
 			var url string
-			err = rows.Scan(&url)
+			var title string
+			err = rows.Scan(&title, &url)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%s\n", url)
+			fmt.Printf("%s %s\n", url, title)
 		}
 		err = rows.Err()
 		if err != nil {
@@ -95,7 +97,7 @@ func listArchivedBookmarks(db *sql.DB) func(c *cli.Context) error {
 
 func listBookmarks(db *sql.DB) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
-		rows, err := db.Query("select id, url from bookmarks")
+		rows, err := db.Query("select id, url, title from bookmarks")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -103,11 +105,12 @@ func listBookmarks(db *sql.DB) func(c *cli.Context) error {
 		for rows.Next() {
 			var url string
 			var id int
-			err = rows.Scan(&id, &url)
+			var title string
+			err = rows.Scan(&id, &url, &title)
 			if err != nil {
 				log.Fatal(err)
 			}
-			fmt.Printf("%d %s\n", id, url)
+			fmt.Printf("%d %s %s\n", id, url, title)
 		}
 		err = rows.Err()
 		if err != nil {
@@ -122,17 +125,18 @@ func archiveBookmark(db *sql.DB) func(c *cli.Context) error {
 		id := c.Args().First()
 		var url string
 		var uuid string
-		err := db.QueryRow("select url, uuid from bookmarks where id=?", id).Scan(&url, &uuid)
+		var title string
+		err := db.QueryRow("insert into archive select url, uuid, title from bookmarks where id=?", id).Scan(&url, &uuid, &title)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		_, err = db.Exec("insert into archive(url, uuid) values(?, ?)", url, uuid)
+		_, err = db.Exec("delete from bookmarks where id=?", id)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		fmt.Println("archived bookmark:", url)
+		fmt.Printf("archived bookmark: %s\n", title)
 		return nil
 	}
 }
@@ -161,6 +165,7 @@ func main() {
 	create table if not exists bookmarks (
 		url text not null unique,
 		id integer not null unique,
+		title text,
 		uuid text not null unique primary key
 	);
 	`
@@ -173,6 +178,7 @@ func main() {
 	sqlStmt2 := `
 	create table if not exists archive (
 		url text not null unique,
+		title text,
 		uuid text not null unique primary key
 	);
 	`
