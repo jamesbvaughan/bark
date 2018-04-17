@@ -17,14 +17,19 @@ List bookmarks:
 bark list
 ```
 
-Remove/Archive a bookmark:
+Archive a bookmark:
+```sh
+bark archive <ID>
+```
+
+Permanently delete a bookmark:
 ```sh
 bark delete <ID>
 ```
 
-Show archived bookmarks:
+List archived bookmarks:
 ```sh
-bark archive
+bark list archived
 ```
 
 

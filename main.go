@@ -120,6 +120,20 @@ func listBookmarks(db *sql.DB) func(c *cli.Context) error {
 	}
 }
 
+func deleteBookmark(db *sql.DB) func(c *cli.Context) error {
+	return func(c *cli.Context) error {
+		id := c.Args().First()
+
+		_, err := db.Exec("delete from bookmarks where id=?", id)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		fmt.Printf("deleted bookmark: %s\n", id)
+		return nil
+	}
+}
+
 func archiveBookmark(db *sql.DB) func(c *cli.Context) error {
 	return func(c *cli.Context) error {
 		id := c.Args().First()
@@ -190,27 +204,32 @@ func main() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:    "add",
-			Aliases: []string{"a"},
-			Usage:   "add a bookmark",
-			Action:  addBookmark(db),
+			Name:   "add",
+			Usage:  "add a bookmark",
+			Action: addBookmark(db),
 		},
 		{
 			Name:    "list",
 			Aliases: []string{"ls"},
 			Usage:   "list bookmarks",
 			Action:  listBookmarks(db),
-		},
-		{
-			Name:    "delete",
-			Aliases: []string{"del", "remove"},
-			Usage:   "archive a bookmark",
-			Action:  archiveBookmark(db),
+			Subcommands: []cli.Command{
+				{
+					Name:   "archived",
+					Usage:  "list archived bookmarks",
+					Action: listArchivedBookmarks(db),
+				},
+			},
 		},
 		{
 			Name:   "archive",
-			Usage:  "list archived bookmarks",
-			Action: listArchivedBookmarks(db),
+			Usage:  "archive a bookmark",
+			Action: archiveBookmark(db),
+		},
+		{
+			Name:   "delete",
+			Usage:  "permanently delete a bookmark",
+			Action: deleteBookmark(db),
 		},
 	}
 
