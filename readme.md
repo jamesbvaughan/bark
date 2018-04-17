@@ -40,6 +40,8 @@ Todo
 - [ ] Download bookmarked youtube videos for offline viewing
 - [ ] Add a command to open bookmarks
 - [ ] Add annotations for bookmarks
+- [ ] Add documentation for the database file location
+- [ ] Add install instructions
 
 
 [Licence](LICENSE)
