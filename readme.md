@@ -41,9 +41,9 @@ bark list archived
 Todo
 ----
 
+- [x] Add a command to open bookmarks
 - [ ] Convert articles to be readable and cache them
 - [ ] Download bookmarked youtube videos for offline viewing
-- [ ] Add a command to open bookmarks
 - [ ] Add annotations for bookmarks
 - [ ] Add documentation for the database file location
 - [ ] Add install instructions
