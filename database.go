@@ -1,0 +1,196 @@
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	"net/http"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/antchfx/htmlquery"
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/satori/go.uuid"
+)
+
+var barkPath string = filepath.Join(os.Getenv("HOME"), ".bark")
+var databaseFilename string = "database"
+var databaseFullFilename string = filepath.Join(barkPath, databaseFilename)
+
+func initializeDatabase() (err error) {
+	err = os.MkdirAll(barkPath, os.ModePerm)
+	if err != nil {
+		return
+	}
+
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	sqlStmt := `
+	create table if not exists bookmarks (
+		uuid text not null unique primary key,
+		added_ts integer not null unique,
+		archived_ts integer unique,
+		title text,
+		url text not null unique
+	);
+	`
+
+	_, err = db.Exec(sqlStmt)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
+func getBookmarks() (bookmarks []bookmark, err error) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	sqlStmt := `
+	select
+		uuid,
+		added_ts,
+		url,
+		title
+	from
+		bookmarks
+	where
+		archived_ts is null
+	`
+	rows, err := db.Query(sqlStmt)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var uuid string
+		var added_ts int64
+		var url string
+		var title string
+		err = rows.Scan(&uuid, &added_ts, &url, &title)
+		if err != nil {
+			return
+		}
+		bookmarks = append(bookmarks, bookmark{uuid, added_ts, url, title})
+	}
+	err = rows.Err()
+	if err != nil {
+		return
+	}
+	return
+}
+
+func getArchivedBookmarks() (bookmarks []bookmark, err error) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	sqlStmt := `
+	select
+		uuid,
+		added_ts,
+		archived_ts,
+		url,
+		title
+	from
+		bookmarks
+	where
+		archived_ts is not null
+	`
+	rows, err := db.Query(sqlStmt)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var uuid string
+		var added_ts int64
+		var archived_ts int64
+		var url string
+		var title string
+		err = rows.Scan(&uuid, &added_ts, &archived_ts, &url, &title)
+		if err != nil {
+			return
+		}
+		bookmarks = append(bookmarks, bookmark{uuid, added_ts, url, title})
+	}
+	err = rows.Err()
+	if err != nil {
+		return
+	}
+	return
+}
+
+func getPageTitle(url string) (title string, err error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		fmt.Printf("error: \"%s\" is not a proper url\n", url)
+		return
+	}
+	defer resp.Body.Close()
+
+	html, err := htmlquery.Parse(resp.Body)
+	if err != nil {
+		return
+	}
+
+	title = htmlquery.InnerText(htmlquery.FindOne(html, "//title"))
+
+	return
+}
+
+func addBookmark(url string) (title string, err error) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	uuid := uuid.Must(uuid.NewV4())
+	added_ts := time.Now().Unix()
+	title, err = getPageTitle(url)
+	if err != nil {
+		return
+	}
+
+	_, err = db.Exec("insert into bookmarks(uuid, added_ts, url, title) values(?, ?, ?, ?)", uuid, added_ts, url, title)
+
+	return
+}
+
+func archiveBookmark(bookmark bookmark) (err error) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	archived_ts := time.Now().Unix()
+	_, err = db.Exec("update bookmarks set archived_ts=? where uuid=?", archived_ts, bookmark.uuid)
+
+	return
+}
+
+func deleteBookmark(bookmark bookmark) (err error) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	_, err = db.Exec("delete from bookmarks where uuid=?", bookmark.uuid)
+
+	return
+}

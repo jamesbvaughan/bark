@@ -7,27 +7,32 @@ bark is a simple command line bookmarking tool
 Usage
 -----
 
-Add a bookmark:
+### Add a bookmark:
 ```sh
 bark add <URL>
 ```
 
-List bookmarks:
+### List bookmarks:
 ```sh
 bark list
 ```
 
-Archive a bookmark:
+### Open a bookmark:
+```sh
+bark open <ID>
+```
+
+### Archive a bookmark:
 ```sh
 bark archive <ID>
 ```
 
-Permanently delete a bookmark:
+### Permanently delete a bookmark:
 ```sh
 bark delete <ID>
 ```
 
-List archived bookmarks:
+### List archived bookmarks:
 ```sh
 bark list archived
 ```

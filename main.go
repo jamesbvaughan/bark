@@ -1,159 +1,13 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
-	"path/filepath"
 
-	"github.com/antchfx/htmlquery"
-	_ "github.com/mattn/go-sqlite3"
-	"github.com/satori/go.uuid"
+	"github.com/skratchdot/open-golang/open"
 	"github.com/urfave/cli"
 )
-
-func getNextId(db *sql.DB) int {
-	nextId := 1
-	rows, err := db.Query("select id from bookmarks order by id")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-	for rows.Next() {
-		var id int
-		err = rows.Scan(&id)
-		if err != nil {
-			log.Fatal(err)
-		}
-		if nextId < id {
-			break
-		}
-		nextId = nextId + 1
-	}
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return nextId
-}
-
-func addBookmark(db *sql.DB) func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		url := c.Args().First()
-
-		resp, err := http.Get(url)
-		if err != nil {
-			fmt.Printf("error: \"%s\" is not a proper url\n", url)
-			os.Exit(1)
-		}
-		defer resp.Body.Close()
-
-		html, err := htmlquery.Parse(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		title := htmlquery.InnerText(htmlquery.FindOne(html, "//title"))
-
-		id := getNextId(db)
-
-		uuid := uuid.Must(uuid.NewV4())
-
-		_, err = db.Exec("insert into bookmarks(url, id, title, uuid) values(?, ?, ?, ?)", url, id, title, uuid)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Printf("added bookmark: %s\n", title)
-		return nil
-	}
-}
-
-func listArchivedBookmarks(db *sql.DB) func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		rows, err := db.Query("select title, url from archive")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var url string
-			var title string
-			err = rows.Scan(&title, &url)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("%s %s\n", url, title)
-		}
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	}
-}
-
-func listBookmarks(db *sql.DB) func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		rows, err := db.Query("select id, url, title from bookmarks")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var url string
-			var id int
-			var title string
-			err = rows.Scan(&id, &url, &title)
-			if err != nil {
-				log.Fatal(err)
-			}
-			fmt.Printf("%d %s %s\n", id, url, title)
-		}
-		err = rows.Err()
-		if err != nil {
-			log.Fatal(err)
-		}
-		return nil
-	}
-}
-
-func deleteBookmark(db *sql.DB) func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		id := c.Args().First()
-
-		_, err := db.Exec("delete from bookmarks where id=?", id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Printf("deleted bookmark: %s\n", id)
-		return nil
-	}
-}
-
-func archiveBookmark(db *sql.DB) func(c *cli.Context) error {
-	return func(c *cli.Context) error {
-		id := c.Args().First()
-		var url string
-		var uuid string
-		var title string
-		err := db.QueryRow("insert into archive select url, uuid, title from bookmarks where id=?", id).Scan(&url, &uuid, &title)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_, err = db.Exec("delete from bookmarks where id=?", id)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		fmt.Printf("archived bookmark: %s\n", title)
-		return nil
-	}
-}
 
 func main() {
 	app := cli.NewApp()
@@ -162,74 +16,97 @@ func main() {
 	app.EnableBashCompletion = true
 	app.Version = "0.0.1"
 
-	barkPath := filepath.Join(os.Getenv("HOME"), ".bark")
-	err := os.MkdirAll(barkPath, os.ModePerm)
+	err := initializeDatabase()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	databaseFile := filepath.Join(barkPath, "database")
-	db, err := sql.Open("sqlite3", databaseFile)
+	bookmarks, err := getBookmarks()
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
 
-	sqlStmt := `
-	create table if not exists bookmarks (
-		url text not null unique,
-		id integer not null unique,
-		title text,
-		uuid text not null unique primary key
-	);
-	`
-
-	_, err = db.Exec(sqlStmt)
+	archivedBookmarks, err := getArchivedBookmarks()
 	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
-	}
-
-	sqlStmt2 := `
-	create table if not exists archive (
-		url text not null unique,
-		title text,
-		uuid text not null unique primary key
-	);
-	`
-
-	_, err = db.Exec(sqlStmt2)
-	if err != nil {
-		log.Fatalf("%q: %s\n", err, sqlStmt)
+		log.Fatal(err)
 	}
 
 	app.Commands = []cli.Command{
 		{
-			Name:   "add",
-			Usage:  "add a bookmark",
-			Action: addBookmark(db),
+			Name:    "add",
+			Aliases: []string{"a"},
+			Usage:   "add a bookmark",
+			Action: func(c *cli.Context) (err error) {
+				url := c.Args().First()
+				title, err := addBookmark(url)
+				if err != nil {
+					return
+				}
+
+				fmt.Printf("added bookmark %d: %s\n", len(bookmarks)+1, title)
+				return
+			},
 		},
 		{
 			Name:    "list",
 			Aliases: []string{"ls"},
 			Usage:   "list bookmarks",
-			Action:  listBookmarks(db),
+			Action: func(c *cli.Context) (err error) {
+				for i, bookmark := range bookmarks {
+					fmt.Printf("%d %s %s\n", i+1, bookmark.url, bookmark.title)
+				}
+				return
+			},
 			Subcommands: []cli.Command{
 				{
-					Name:   "archived",
-					Usage:  "list archived bookmarks",
-					Action: listArchivedBookmarks(db),
+					Name:  "archived",
+					Usage: "list archived bookmarks",
+					Action: func(c *cli.Context) (err error) {
+						for _, bookmark := range archivedBookmarks {
+							fmt.Printf("%s %s\n", bookmark.url, bookmark.title)
+						}
+						return
+					},
 				},
 			},
 		},
 		{
-			Name:   "archive",
-			Usage:  "archive a bookmark",
-			Action: archiveBookmark(db),
+			Name:    "open",
+			Aliases: []string{"o"},
+			Usage:   "open a bookmark",
+			Action: func(c *cli.Context) (err error) {
+				bookmark := getBookmark(bookmarks, c.Args().First())
+				fmt.Printf("opening \"%s\"...\n", bookmark.title)
+				err = open.Run(bookmark.url)
+				return
+			},
 		},
 		{
-			Name:   "delete",
-			Usage:  "permanently delete a bookmark",
-			Action: deleteBookmark(db),
+			Name:  "archive",
+			Usage: "archive a bookmark",
+			Action: func(c *cli.Context) (err error) {
+				bookmark := getBookmark(bookmarks, c.Args().First())
+				err = archiveBookmark(bookmark)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("archived bookmark: \"%s\"\n", bookmark.title)
+				return
+			},
+		},
+		{
+			Name:    "delete",
+			Aliases: []string{"del", "rm"},
+			Usage:   "permanently delete a bookmark",
+			Action: func(c *cli.Context) (err error) {
+				bookmark := getBookmark(bookmarks, c.Args().First())
+				err = deleteBookmark(bookmark)
+				if err != nil {
+					log.Fatal(err)
+				}
+				fmt.Printf("deleted bookmark: \"%s\"\n", bookmark.title)
+				return
+			},
 		},
 	}
 
