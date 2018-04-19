@@ -2,13 +2,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/antchfx/htmlquery"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/satori/go.uuid"
 )
@@ -130,24 +127,6 @@ func getArchivedBookmarks() (bookmarks []bookmark, err error) {
 	if err != nil {
 		return
 	}
-	return
-}
-
-func getPageTitle(url string) (title string, err error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		fmt.Printf("error: \"%s\" is not a proper url\n", url)
-		return
-	}
-	defer resp.Body.Close()
-
-	html, err := htmlquery.Parse(resp.Body)
-	if err != nil {
-		return
-	}
-
-	title = htmlquery.InnerText(htmlquery.FindOne(html, "//title"))
-
 	return
 }
 
