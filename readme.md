@@ -48,6 +48,7 @@ Todo
 - [ ] Add documentation for the database file location
 - [ ] Add install instructions
 - [ ] Add option to change bookmark title
+- [ ] Add web interface
 
 
 [Licence](LICENSE)
