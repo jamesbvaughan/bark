@@ -47,6 +47,7 @@ Todo
 - [ ] Add annotations for bookmarks
 - [ ] Add documentation for the database file location
 - [ ] Add install instructions
+- [ ] Add option to change bookmark title
 
 
 [Licence](LICENSE)
