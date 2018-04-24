@@ -1,45 +1,52 @@
-bark
-====
+# bark
 
 bark is a simple command line bookmarking tool
 
+## Usage
 
-Usage
------
+### Add a bookmark
 
-### Add a bookmark:
 ```sh
 bark add <URL>
 ```
 
-### List bookmarks:
+### List bookmarks
+
 ```sh
 bark list
 ```
 
-### Open a bookmark:
+### Open a bookmark
+
 ```sh
 bark open <ID>
 ```
 
-### Archive a bookmark:
+### Archive a bookmark
+
 ```sh
 bark archive <ID>
 ```
 
-### Permanently delete a bookmark:
+### Permanently delete a bookmark
+
 ```sh
 bark delete <ID>
 ```
 
-### List archived bookmarks:
+### Get help
+
 ```sh
-bark list archived
+bark help
 ```
 
+### Get help for a specific command
 
-Todo
-----
+```sh
+bark help <COMMAND>
+```
+
+## Todo
 
 - [x] Add a command to open bookmarks
 - [ ] Convert articles to be readable and cache them
@@ -50,9 +57,7 @@ Todo
 - [ ] Add option to change bookmark title
 - [ ] Add web interface
 
-
-[Licence](LICENSE)
-------------------
+## [Licence](LICENSE)
 
 The MIT License (MIT)
 

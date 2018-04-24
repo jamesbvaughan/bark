@@ -61,23 +61,24 @@ func main() {
 			Name:    "list",
 			Aliases: []string{"ls"},
 			Usage:   "list bookmarks",
-			Action: func(c *cli.Context) (err error) {
-				for i, bookmark := range bookmarks {
-					fmt.Printf("%d %s %s\n", i+1, bookmark.url, bookmark.title)
-				}
-				return
-			},
-			Subcommands: []cli.Command{
-				{
-					Name:  "archived",
-					Usage: "list archived bookmarks",
-					Action: func(c *cli.Context) (err error) {
-						for _, bookmark := range archivedBookmarks {
-							fmt.Printf("%s %s\n", bookmark.url, bookmark.title)
-						}
-						return
-					},
+			UseShortOptionHandling: true,
+			Flags: []cli.Flag{
+				cli.BoolFlag{
+					Name:  "urls, u",
+					Usage: "print bookmark URLs",
 				},
+				cli.BoolFlag{
+					Name:  "archive, a",
+					Usage: "print archived bookmarks",
+				},
+			},
+			Action: func(c *cli.Context) (err error) {
+				bookmarksToPrint := bookmarks
+				if c.Bool("archive") {
+					bookmarksToPrint = archivedBookmarks
+				}
+				printBookmarkTable(bookmarksToPrint, c.Bool("urls"), !c.Bool("archive"))
+				return
 			},
 		},
 		{
