@@ -46,17 +46,6 @@ bark help
 bark help <COMMAND>
 ```
 
-## Todo
-
-- [x] Add a command to open bookmarks
-- [ ] Convert articles to be readable and cache them
-- [ ] Download bookmarked youtube videos for offline viewing
-- [ ] Add annotations for bookmarks
-- [ ] Add documentation for the database file location
-- [ ] Add install instructions
-- [ ] Add option to change bookmark title
-- [ ] Add web interface
-
 ## [Licence](LICENSE)
 
 The MIT License (MIT)
