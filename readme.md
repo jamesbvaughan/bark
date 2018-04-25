@@ -1,6 +1,8 @@
 # bark [![build status](https://travis-ci.org/jamesbvaughan/bark.svg)](https://travis-ci.org/jamesbvaughan/bark)
 
-bark is a simple command line bookmarking tool
+bark is a bookmarking tool, similar to
+[Pocket](https://getpocket.com/).
+It has a simple command line interface as well as a web interface.
 
 ## Installation
 
