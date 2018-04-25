@@ -1,4 +1,4 @@
-# bark
+# bark [![build status](https://travis-ci.org/jamesbvaughan/bark.svg)](https://travis-ci.org/jamesbvaughan/bark)
 
 bark is a simple command line bookmarking tool
 
