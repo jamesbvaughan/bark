@@ -17,7 +17,7 @@ Just run `bark add https://github.com/jamesbvaughan/bark`
 to add your first bookmark!
 
 Alternatively, you can use bark from the web interface, which looks like this:
-![web interface screenshot](https://raw.githubusercontent.com/jamesbvaughan/bark/master/web-ui.png "bark web interface")
+![web interface screenshot](https://raw.githubusercontent.com/jamesbvaughan/bark/master/misc/web-ui.png "bark web interface")
 and can be served locally by running `bark serve`.
 
 ## Usage
