@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Bark Bookmarks</title>
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/open-iconic-bootstrap.min.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+	</head>
+	<body>
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-baseline">
+        <h1 class="display-3 mt-5">
+          {{ if eq .Page "archive" }}
+            Archive
+          {{ else if eq .Page "bookmarks" }}
+            Bookmarks
+          {{ end }}
+        </h1>
+        <ul class="nav nav-pills">
+          <li class="nav-item">
+            <a class="nav-link{{if eq .Page "bookmarks"}} active{{end}}" href="/">
+              Bookmarks
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link{{if eq .Page "archive"}} active{{end}}" href="/archive">
+              Archive
+            </a>
+          </li>
+        </ul>
+      </div>
+      <ul class="list-group list-group-flush">
+        {{range .Bookmarks}}
+          <li class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div>
+              <a href="{{.URL}}" target="_blank">{{.Title}}</a>
+              </div>
+              <div>
+              <small class="text-muted">{{.Hostname}}</small>
+              </div>
+            </div>
+            {{ if eq $.Page "archive" }}
+              <a href="/bookmarks/{{.UUID}}/delete">
+                <span class="oi oi-x"></span>
+              </a>
+            {{ else if eq $.Page "bookmarks" }}
+              <a href="/bookmarks/{{.UUID}}/archive">
+                <span class="oi oi-check"></span>
+              </a>
+            {{ end }}
+          </li>
+        {{ end }}
+      </ul>
+    </div>
+	</body>
+</html>

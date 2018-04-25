@@ -1,8 +1,9 @@
 package bark
 
 type Bookmark struct {
-	UUID    string
-	AddedTs int64
-	URL     string
-	Title   string
+	UUID           string
+	AddedTimestamp int64
+	URL            string
+	Title          string
+	Hostname       string
 }

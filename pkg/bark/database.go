@@ -32,7 +32,7 @@ func InitializeDatabase() (err error) {
 		added_ts integer not null unique,
 		archived_ts integer unique,
 		title text,
-		url text not null unique
+		url text not null
 	);
 	`
 
@@ -77,12 +77,50 @@ func GetBookmarks() (bookmarks []Bookmark, err error) {
 		if err != nil {
 			return
 		}
-		bookmarks = append(bookmarks, Bookmark{uuid, added_ts, url, title})
+
+		hostname := GetHostFromURL(url)
+
+		bookmarks = append(bookmarks, Bookmark{uuid, added_ts, url, title, hostname})
 	}
 	err = rows.Err()
 	if err != nil {
 		return
 	}
+	return
+}
+
+func GetBookmarkByUUID(UUID string) (err error, bookmark Bookmark) {
+	db, err := sql.Open("sqlite3", databaseFullFilename)
+	if err != nil {
+		return
+	}
+	defer db.Close()
+
+	var uuid string
+	var added_ts int64
+	var url string
+	var title string
+
+	sqlStmt := `
+	select
+		uuid,
+		added_ts,
+		url,
+		title
+	from
+		bookmarks
+	where
+		uuid=?
+	`
+	err = db.QueryRow(sqlStmt, UUID).Scan(&uuid, &added_ts, &url, &title)
+	if err != nil {
+		return
+	}
+
+	hostname := GetHostFromURL(url)
+
+	bookmark = Bookmark{uuid, added_ts, url, title, hostname}
+
 	return
 }
 
@@ -104,6 +142,8 @@ func GetArchivedBookmarks() (bookmarks []Bookmark, err error) {
 		bookmarks
 	where
 		archived_ts is not null
+	order by
+		archived_ts
 	`
 	rows, err := db.Query(sqlStmt)
 	if err != nil {
@@ -121,7 +161,10 @@ func GetArchivedBookmarks() (bookmarks []Bookmark, err error) {
 		if err != nil {
 			return
 		}
-		bookmarks = append(bookmarks, Bookmark{uuid, added_ts, url, title})
+
+		hostname := GetHostFromURL(url)
+
+		bookmarks = append(bookmarks, Bookmark{uuid, added_ts, url, title, hostname})
 	}
 	err = rows.Err()
 	if err != nil {
@@ -137,19 +180,19 @@ func AddBookmark(url string) (title string, err error) {
 	}
 	defer db.Close()
 
-	uuid := uuid.New().String()
+	new_uuid := uuid.New().String()
 	added_ts := time.Now().Unix()
 	title, err = GetPageTitle(url)
 	if err != nil {
 		return
 	}
 
-	_, err = db.Exec("insert into bookmarks(uuid, added_ts, url, title) values(?, ?, ?, ?)", uuid, added_ts, url, title)
+	_, err = db.Exec("insert into bookmarks(uuid, added_ts, url, title) values(?, ?, ?, ?)", new_uuid, added_ts, url, title)
 
 	return
 }
 
-func ArchiveBookmark(bookmark Bookmark) (err error) {
+func ArchiveBookmark(uuid string) (err error) {
 	db, err := sql.Open("sqlite3", databaseFullFilename)
 	if err != nil {
 		return
@@ -157,19 +200,19 @@ func ArchiveBookmark(bookmark Bookmark) (err error) {
 	defer db.Close()
 
 	archived_ts := time.Now().Unix()
-	_, err = db.Exec("update bookmarks set archived_ts=? where uuid=?", archived_ts, bookmark.UUID)
+	_, err = db.Exec("update bookmarks set archived_ts=? where uuid=?", archived_ts, uuid)
 
 	return
 }
 
-func DeleteBookmark(bookmark Bookmark) (err error) {
+func DeleteBookmark(uuid string) (err error) {
 	db, err := sql.Open("sqlite3", databaseFullFilename)
 	if err != nil {
 		return
 	}
 	defer db.Close()
 
-	_, err = db.Exec("delete from bookmarks where uuid=?", bookmark.UUID)
+	_, err = db.Exec("delete from bookmarks where uuid=?", uuid)
 
 	return
 }

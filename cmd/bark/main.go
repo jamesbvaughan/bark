@@ -99,7 +99,7 @@ func main() {
 			Usage: "archive a bookmark",
 			Action: func(c *cli.Context) (err error) {
 				bookmark := bark.GetBookmark(bookmarks, c.Args().First())
-				err = bark.ArchiveBookmark(bookmark)
+				err = bark.ArchiveBookmark(bookmark.UUID)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -113,11 +113,19 @@ func main() {
 			Usage:   "permanently delete a bookmark",
 			Action: func(c *cli.Context) (err error) {
 				bookmark := bark.GetBookmark(bookmarks, c.Args().First())
-				err = bark.DeleteBookmark(bookmark)
+				err = bark.DeleteBookmark(bookmark.UUID)
 				if err != nil {
 					log.Fatal(err)
 				}
 				fmt.Printf("deleted bookmark: \"%s\"\n", bookmark.Title)
+				return
+			},
+		},
+		{
+			Name:  "serve",
+			Usage: "start the webserver",
+			Action: func(c *cli.Context) (err error) {
+				bark.Serve()
 				return
 			},
 		},

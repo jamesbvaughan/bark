@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -20,10 +21,10 @@ func GetBookmark(bookmarks []Bookmark, indexString string) Bookmark {
 	return bookmarks[i-1]
 }
 
-func GetPageTitle(url string) (title string, err error) {
-	resp, err := http.Get(url)
+func GetPageTitle(inputURL string) (title string, err error) {
+	resp, err := http.Get(inputURL)
 	if err != nil {
-		fmt.Printf("error: \"%s\" is not a proper url\n", url)
+		fmt.Printf("error: \"%s\" is not a proper url\n", inputURL)
 		return
 	}
 	defer resp.Body.Close()
@@ -34,9 +35,27 @@ func GetPageTitle(url string) (title string, err error) {
 	}
 
 	titleElement := htmlquery.FindOne(html, "//title")
-	title = strings.TrimSpace(htmlquery.InnerText(titleElement))
+	if titleElement == nil {
+		u, err := url.Parse(inputURL)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		title = u.Path
+	} else {
+		title = strings.TrimSpace(htmlquery.InnerText(titleElement))
+	}
 
 	return
+}
+
+func GetHostFromURL(inputURL string) string {
+	u, err := url.Parse(inputURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return u.Hostname()
 }
 
 func PrintBookmarkTable(bookmarks []Bookmark, printURLs bool, printIDs bool) {
