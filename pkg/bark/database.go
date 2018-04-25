@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/satori/go.uuid"
 )
 
 var barkPath string = filepath.Join(os.Getenv("HOME"), ".bark")
@@ -137,7 +137,7 @@ func AddBookmark(url string) (title string, err error) {
 	}
 	defer db.Close()
 
-	uuid := uuid.Must(uuid.NewV4())
+	uuid := uuid.New().String()
 	added_ts := time.Now().Unix()
 	title, err = GetPageTitle(url)
 	if err != nil {
