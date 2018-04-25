@@ -2,6 +2,17 @@
 
 bark is a simple command line bookmarking tool
 
+## Installation
+
+The best way to install bark right now is to
+1. Download a precompiled binary from [the releases page](https://github.com/jamesbvaughan/bark/releases).
+2. Place it in your `PATH`.
+3. Make it executable.
+
+Once you've done that you're ready to go!
+Just run `bark add https://github.com/jamesbvaughan/bark`
+to add your first bookmark!
+
 ## Usage
 
 ### Add a bookmark
