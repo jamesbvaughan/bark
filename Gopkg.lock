@@ -20,10 +20,16 @@
   version = "0.2"
 
 [[projects]]
-  name = "github.com/mattn/go-sqlite3"
+  name = "github.com/gorilla/context"
   packages = ["."]
-  revision = "6c771bb9887719704b210e87e934f08be014bdb1"
-  version = "v1.6.0"
+  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
+  version = "v1.6.1"
 
 [[projects]]
   branch = "master"
@@ -74,6 +80,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "45b372f4941888d7a8c171e3ea20fae654ad62310de4b47bf2f6f93188b1a1de"
+  inputs-digest = "af8f11907602eb25bc3426514381044d7f6d479aaf83d81505aae1ab498e4f7f"
   solver-name = "gps-cdcl"
   solver-version = 1

@@ -1,4 +1,4 @@
-package bark
+package main
 
 type Bookmark struct {
 	UUID           string

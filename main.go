@@ -6,8 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/jamesbvaughan/bark/pkg/bark"
-
 	"github.com/skratchdot/open-golang/open"
 	"github.com/urfave/cli"
 )
@@ -28,42 +26,23 @@ func main() {
 	app.Usage = "bookmark things like you mean it"
 	app.EnableBashCompletion = true
 
-	err := bark.InitializeDatabase()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	bookmarks, err := bark.GetBookmarks()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	archivedBookmarks, err := bark.GetArchivedBookmarks()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	app.Commands = []cli.Command{
 		{
 			Name:    "add",
 			Aliases: []string{"a"},
 			Usage:   "add a bookmark",
-			Action: func(c *cli.Context) (err error) {
+			Action: func(c *cli.Context) {
+				bookmarks := GetBookmarks()
 				url := c.Args().First()
-				title, err := bark.AddBookmark(url)
-				if err != nil {
-					return
-				}
+				title := AddBookmark(url)
 
 				fmt.Printf("added bookmark %d: %s\n", len(bookmarks)+1, title)
-				return
 			},
 		},
 		{
 			Name:    "list",
 			Aliases: []string{"ls"},
 			Usage:   "list bookmarks",
-			// UseShortOptionHandling: true,
 			Flags: []cli.Flag{
 				cli.BoolFlag{
 					Name:  "urls, u",
@@ -74,64 +53,69 @@ func main() {
 					Usage: "print archived bookmarks",
 				},
 			},
-			Action: func(c *cli.Context) (err error) {
-				bookmarksToPrint := bookmarks
+			Action: func(c *cli.Context) {
+				var bookmarks []Bookmark
+
 				if c.Bool("archive") {
-					bookmarksToPrint = archivedBookmarks
+					bookmarks = GetArchivedBookmarks()
+				} else {
+					bookmarks = GetBookmarks()
 				}
-				bark.PrintBookmarkTable(bookmarksToPrint, c.Bool("urls"), !c.Bool("archive"))
-				return
+
+				PrintBookmarkTable(bookmarks, c.Bool("urls"), !c.Bool("archive"))
 			},
 		},
 		{
 			Name:    "open",
 			Aliases: []string{"o"},
 			Usage:   "open a bookmark",
-			Action: func(c *cli.Context) (err error) {
-				bookmark := bark.GetBookmark(bookmarks, c.Args().First())
+			Action: func(c *cli.Context) {
+				index := c.Args().First()
+				bookmark := GetBookmarkAtIndex(index)
+
 				fmt.Printf("opening \"%s\"...\n", bookmark.Title)
-				err = open.Run(bookmark.URL)
-				return
+
+				err := open.Run(bookmark.URL)
+				if err != nil {
+					log.Fatal(err)
+				}
 			},
 		},
 		{
 			Name:  "archive",
 			Usage: "archive a bookmark",
-			Action: func(c *cli.Context) (err error) {
-				bookmark := bark.GetBookmark(bookmarks, c.Args().First())
-				err = bark.ArchiveBookmark(bookmark.UUID)
-				if err != nil {
-					log.Fatal(err)
-				}
+			Action: func(c *cli.Context) {
+				index := c.Args().First()
+				bookmark := GetBookmarkAtIndex(index)
+
+				ArchiveBookmark(bookmark.UUID)
+
 				fmt.Printf("archived bookmark: \"%s\"\n", bookmark.Title)
-				return
 			},
 		},
 		{
 			Name:    "delete",
 			Aliases: []string{"del", "rm"},
 			Usage:   "permanently delete a bookmark",
-			Action: func(c *cli.Context) (err error) {
-				bookmark := bark.GetBookmark(bookmarks, c.Args().First())
-				err = bark.DeleteBookmark(bookmark.UUID)
-				if err != nil {
-					log.Fatal(err)
-				}
+			Action: func(c *cli.Context) {
+				index := c.Args().First()
+				bookmark := GetBookmarkAtIndex(index)
+
+				DeleteBookmark(bookmark.UUID)
+
 				fmt.Printf("deleted bookmark: \"%s\"\n", bookmark.Title)
-				return
 			},
 		},
 		{
 			Name:  "serve",
 			Usage: "start the webserver",
-			Action: func(c *cli.Context) (err error) {
-				bark.Serve()
-				return
+			Action: func(c *cli.Context) {
+				Serve()
 			},
 		},
 	}
 
-	err = app.Run(os.Args)
+	err := app.Run(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}

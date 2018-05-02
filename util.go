@@ -1,4 +1,4 @@
-package bark
+package main
 
 import (
 	"fmt"
@@ -13,25 +13,31 @@ import (
 	"github.com/antchfx/htmlquery"
 )
 
-func GetBookmark(bookmarks []Bookmark, indexString string) Bookmark {
+func GetBookmarkAtIndex(indexString string) (bookmark Bookmark) {
+	bookmarks := GetBookmarks()
+
 	i, err := strconv.Atoi(indexString)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if i > len(bookmarks) {
+		log.Fatalf("There is no bookmark with index %d", i-1)
+	}
+
 	return bookmarks[i-1]
 }
 
-func GetPageTitle(inputURL string) (title string, err error) {
+func GetPageTitle(inputURL string) (title string) {
 	resp, err := http.Get(inputURL)
 	if err != nil {
-		fmt.Printf("error: \"%s\" is not a proper url\n", inputURL)
-		return
+		log.Fatalf("error: \"%s\" is not a proper url\n", inputURL)
 	}
 	defer resp.Body.Close()
 
 	html, err := htmlquery.Parse(resp.Body)
 	if err != nil {
-		return
+		log.Fatal(err)
 	}
 
 	titleElement := htmlquery.FindOne(html, "//title")
@@ -47,15 +53,6 @@ func GetPageTitle(inputURL string) (title string, err error) {
 	}
 
 	return
-}
-
-func GetHostFromURL(inputURL string) string {
-	u, err := url.Parse(inputURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return u.Hostname()
 }
 
 func PrintBookmarkTable(bookmarks []Bookmark, printURLs bool, printIDs bool) {
